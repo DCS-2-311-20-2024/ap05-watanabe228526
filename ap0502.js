@@ -1,11 +1,11 @@
 //
 // 応用プログラミング 第5回 課題2 (ap0502)
-// G384002023 拓殖太郎
+// G285262022 渡邉秋
 //
 "use strict"; // 厳格モード
 
 import * as THREE from 'three';
-
+import{OrbitControls}from'three/addons';
 import GUI from 'ili-gui';
 
 // ３Ｄページ作成関数の定義
@@ -34,17 +34,23 @@ function init() {
     .appendChild(renderer.domElement);
 
   // カメラ制御
-
+    const orbitControls
+      =new OrbitControls(camera,renderer.domElement);
+    orbitControls.listenToKeyEvents(window);
+    orbitControls.enableDamping=true;
   // 座標軸の設定
   const axes = new THREE.AxesHelper(18);
   scene.add(axes);
   
   // テクスチャの読み込み
+  const textureLoader=new THREE.TextureLoader();
+  const moonTexture=textureLoader.load("moon.jpg");
+  const testTexture=textureLoader.load("moonTester.jpg");
 
   // 正20面体の作成
   const geometry = new THREE.IcosahedronGeometry();
-  const material = new THREE.MeshNormalMaterial();
-    
+  const material = new THREE.MeshLambertMaterial();
+  material.map=testTexture;
   // UVマッピング
   // 立体の表面の三角形とテクスチャ画像の対応を決める
   //   基準となる数値
@@ -70,40 +76,41 @@ function init() {
       uvs.array[f+5] = y0;      // -dy + dy;
     break;
     case 2: // 2段目
-      uvs.array[f]   = x0;
-      uvs.array[f+1] = y0;
-      uvs.array[f+2] = x0;
-      uvs.array[f+3] = y0;
-      uvs.array[f+4] = x0;
-      uvs.array[f+5] = y0;
-      break;
+    uvs.array[f]   = x0 + dx * x;
+    uvs.array[f+1] = y0 - dy; // -dy + 0
+    uvs.array[f+2] = x0 + dx * (x +1);
+    uvs.array[f+3] = y0 - 2*dy; // -dy -dy
+    uvs.array[f+4] = x0 + dx * (x + 2);
+    uvs.array[f+5] = y0-dy;      // -dy + 0;
+  break;
     case 3: // 3段目
-      uvs.array[f]   = x0;
-      uvs.array[f+1] = y0;
-      uvs.array[f+2] = x0;
-      uvs.array[f+3] = y0;
-      uvs.array[f+4] = x0;
-      uvs.array[f+5] = y0;
-      break;
+    uvs.array[f]   = x0 + dx * x;
+    uvs.array[f+1] = y0 -2*dy; // -dy + 0
+    uvs.array[f+2] = x0 + dx * (x -1);
+    uvs.array[f+3] = y0 - dy; // -dy -dy
+    uvs.array[f+4] = x0 + dx * (x -2);
+    uvs.array[f+5] = y0-2*dy;      // -dy + 0;
+  break;
     case 4: // 4段目
-      uvs.array[f]   = x0;
-      uvs.array[f+1] = y0;
-      uvs.array[f+2] = x0;
-      uvs.array[f+3] = y0;
-      uvs.array[f+4] = x0;
-      uvs.array[f+5] = y0;
-      break;
+    uvs.array[f]   = x0 + dx * x;
+    uvs.array[f+1] = y0 - 2*dy; // -dy + 0
+    uvs.array[f+2] = x0 + dx * (x -2);
+    uvs.array[f+3] = y0 - 2*dy; // -dy + 0
+    uvs.array[f+4] = x0 + dx * (x - 1);
+    uvs.array[f+5] = y0-3*dy;      // -dy + dy;
+  break;
     }
   }
   // 関数の適用
   // 最上段
-  setUvs( 0, 1, 1); setUvs( 1, 3, 1);
+  setUvs( 0, 1, 1); setUvs( 1, 3, 1);setUvs(2,5,1);setUvs(3,7,1);setUvs(4,9,1);
   // 2段目
-  
+  setUvs( 6, 1, 2);setUvs( 5, 3, 2);setUvs( 9, 5, 2);setUvs( 8, 7, 2);setUvs( 7, 9, 2);
   // 3段目
-  
+  setUvs( 16, 2, 3);setUvs( 15, 4, 3);setUvs( 19, 6, 3);setUvs( 18, 8, 3);setUvs( 17, 10, 3);
+
   // 最下段
-  
+  setUvs( 11, 2, 4);setUvs( 10, 4, 4);setUvs( 14, 6, 4);setUvs( 13, 8, 4);setUvs( 12, 10, 4);
   geometry.setAttribute("uv", uvs, 2);
   
   // 形状と素材をまとめる
@@ -128,13 +135,18 @@ function init() {
   function render() {
     axes.visible = controls.axes;
     // テクスチャの切り替え
-
+    if(controls.test){
+      material.map=testTexture;
+    }
+    else{
+      material.map=moonTexture;
+    }
     // 物体の回転
     if (controls.rotate) {
       icosahedron.rotation.y = (icosahedron.rotation.y + 0.01) % (2 * Math.PI);
     }
     // カメラ位置の制御
-
+    orbitControls.update();
     // 描画
     renderer.render(scene, camera);
     requestAnimationFrame(render);
